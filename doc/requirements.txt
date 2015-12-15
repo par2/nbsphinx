@@ -1,2 +1,3 @@
 nbsphinx
 ipykernel
+cloud_sptheme
