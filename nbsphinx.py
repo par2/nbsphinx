@@ -304,6 +304,7 @@ class NotebookParser(rst.Parser):
     def get_transforms(self):
         """List of transforms for documents parsed by this parser."""
         return rst.Parser.get_transforms(self) + [RewriteNotebookLinks,
+                                                  GetLinkedFiles,
                                                   CreateSectionLabels]
 
     def parse(self, inputstring, document):
@@ -538,6 +539,22 @@ class RewriteNotebookLinks(docutils.transforms.Transform):
                     node.replace_self(xref)
 
 
+class GetLinkedFiles(docutils.transforms.Transform):
+    """
+    """
+
+    default_priority = 500  # After RewriteNotebookLinks
+
+    def apply(self):
+        env = self.document.settings.env
+        for node in self.document.traverse(docutils.nodes.reference):
+            uri = node.get('refuri', '')
+            if '://' not in uri:
+                print(uri)
+                # TODO: copy to doctree dir
+                # TODO: save info in env
+
+
 class CreateSectionLabels(docutils.transforms.Transform):
     """Make labels for each notebook and each section thereof.
 
@@ -589,6 +606,14 @@ def html_page_context(app, pagename, templatename, context, doctree):
     if body:
         style = '\n<style>' + CSS_STRING + '</style>\n'
         context['body'] = style + body
+
+
+def html_collect_pages(app):
+    files = ['file1', 'file2', 'file3']
+    for src in app.status_iterator(files, 'copying linked files... ',
+                                   sphinx.util.console.brown, len(files)):
+        pass
+    return []
 
 
 def depart_code_html(self, node):
@@ -684,5 +709,6 @@ def setup(app):
                  latex=(visit_code_latex, depart_code_latex))
     app.connect('builder-inited', builder_inited)
     app.connect('html-page-context', html_page_context)
+    app.connect('html-collect-pages', html_collect_pages)
 
     return {'version': __version__, 'parallel_read_safe': True}
